@@ -223,6 +223,7 @@ def C_extract_profit_loss_data(soup):
             if "EPS" in row.text:
                 last_three_years_data["EPS"] = [cell.text.strip().replace(',', '') for cell in cells[-4:-1]]
                 print(f"EPS found: {last_three_years_data['EPS']}")
+
     return last_three_years_data
 
 def C_get_profit_loss_data():
@@ -235,29 +236,33 @@ def C_get_profit_loss_data():
     profit_loss_data = C_extract_profit_loss_data(soup)
     return profit_loss_data
 
-
 def C_save_profit_loss_to_csv(data, filename='Profit_Loss_Data.csv'):
-    stock_names = [
-        "Voltas", "Havells", "Blue Star",
-        "Whirlpool", "Crompton", "Symphony",
-        "Orient Electric"
-    ]
+    # Define the header for the CSV file
+    header = ["Stock Name", "Year", "Sales", "Net Profit", "OPM", "EPS"]
 
+    # Prepare the data to be written to CSV
+    stock_names = ["Voltas", "Havells", "Blue Star", "Whirlpool", "Crompton", "Symphony", "Orient Electric"]
+    years = [2022, 2023, 2024]
+
+    # Create a list to hold the rows for the CSV
+    rows = []
+
+    # Iterate through each stock name and corresponding years
+    for stock in stock_names:
+        for year in years:
+            sales = data.get("Sales", ["", "", ""])[years.index(year)] if year in years else ""
+            net_profit = data.get("Net Profit", ["", "", ""])[years.index(year)] if year in years else ""
+            opm = data.get("OPM", ["", "", ""])[years.index(year)] if year in years else ""
+            eps = data.get("EPS", ["", "", ""])[years.index(year)] if year in years else ""
+
+            rows.append([stock, year, sales, net_profit, opm, eps])
+
+    # Write the data to the CSV file
     with open(filename, mode='w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(["Stock Name", "Year", "Sales", "Net Profit", "OPM", "EPS"])
-        for stock in stock_names:
-            for year in ["2022", "2023", "2024"]:  # Keep years as they are
-                sales_value = data["Sales"].pop(0) if data["Sales"] else ""  # Get the value for 2022
-                if year == "2023":
-                    sales_value = data["Sales"].pop(0) if data["Sales"] else ""  # Get the value for 2023
-                elif year == "2024":
-                    sales_value = data["Sales"].pop(0) if data["Sales"] else ""  # Get the value for 2024
-                writer.writerow([stock, year,
-                                 sales_value,
-                                 data["Net Profit"].pop(0) if data["Net Profit"] else "",
-                                 data["OPM"].pop(0) if data["OPM"] else "",
-                                 data["EPS"].pop(0) if data["EPS"] else ""])
+        writer.writerow(header)  # Write the header
+        writer.writerows(rows)    # Write the data rows
+
 
 ####
 
@@ -295,7 +300,7 @@ def setup():
 
     for company_name in companies.keys():
         company_name = company_name.strip()  # Ensure no trailing/leading spaces
-        stats = search(driver, company_name)
+        search(driver, company_name)
         C_save_profit_loss_to_csv(C_get_profit_loss_data())
         print("\nProfit and loss data has been saved to Profit_Loss_Data.csv")
 

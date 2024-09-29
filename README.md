@@ -4,8 +4,10 @@
 2. Pokemon_Item_Inventory.csv
 3. Battle_Performance_Stats.csv
 
-Part 3 is partially incomplete.
+> This codebase is really messy, all 3 of us made diff versions and we tried merging them last moment.
 
-We shall try fixing it before the 6PM deadline but this video is recorded at 5:20.
-
-> This codebase is really messy, all 3 of us made diff versions and we tried merging them last moment
+``` sh
+python -m venv .venv
+source .venv/bin/activate
+python solve.py
+```
