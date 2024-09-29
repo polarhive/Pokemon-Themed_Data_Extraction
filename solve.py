@@ -5,7 +5,6 @@ from bs4 import BeautifulSoup
 import time
 import csv
 
-
 companies = {
     "Voltas": "VOLTAS",
     "Blue Star": "BLUESTARCO",
@@ -187,6 +186,81 @@ def B_save_balance_sheet_to_csv(data, filename='Balance_Sheet_Data.csv'):
 
 #############
 
+def C_extract_profit_loss_data(soup):
+    profit_loss = {
+        "Sales": [],
+        "Net Profit": [],
+        "OPM": [],
+        "EPS": [],
+    }
+
+    profit_loss_section = soup.find('section', id='profit-loss')
+    if not profit_loss_section:
+        return profit_loss  # Return empty if no section found
+    table = profit_loss_section.find('table', class_='data-table')
+
+    if not table:
+        return profit_loss  # Return empty if no table found
+
+    last_three_years_data = {}
+
+    # Iterate through each row in the table
+    for row in table.find_all('tr'):
+        cells = row.find_all('td')
+
+        if len(cells) > 1:  # Ensure it's a data row with values
+            if "Sales" in row.text:
+                last_three_years_data["Sales"] = [cell.text.strip().replace(',', '') for cell in cells[-4:-1]]
+                print(f"Sales found: {last_three_years_data['Sales']}")
+
+            if "Net Profit" in row.text:
+                last_three_years_data["Net Profit"] = [cell.text.strip().replace(',', '') for cell in cells[-4:-1]]
+                print(f"Net Profit found: {last_three_years_data['Net Profit']}")
+
+            if "OPM" in row.text:
+                last_three_years_data["OPM"] = [cell.text.strip().replace(',', '') for cell in cells[-4:-1]]
+                print(f"OPM found: {last_three_years_data['OPM']}")
+            if "EPS" in row.text:
+                last_three_years_data["EPS"] = [cell.text.strip().replace(',', '') for cell in cells[-4:-1]]
+                print(f"EPS found: {last_three_years_data['EPS']}")
+    return last_three_years_data
+
+def C_get_profit_loss_data():
+    profit_loss_button = driver.find_element(By.XPATH, "//a[@href='#profit-loss']")
+    profit_loss_button.click()
+    time.sleep(2)  # Wait for the profit & loss to load
+
+    page_source = driver.page_source
+    soup = BeautifulSoup(page_source, 'html.parser')
+    profit_loss_data = C_extract_profit_loss_data(soup)
+    return profit_loss_data
+
+
+def C_save_profit_loss_to_csv(data, filename='Profit_Loss_Data.csv'):
+    stock_names = [
+        "Voltas", "Havells", "Blue Star",
+        "Whirlpool", "Crompton", "Symphony",
+        "Orient Electric"
+    ]
+
+    with open(filename, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Stock Name", "Year", "Sales", "Net Profit", "OPM", "EPS"])
+        for stock in stock_names:
+            for year in ["2022", "2023", "2024"]:  # Keep years as they are
+                sales_value = data["Sales"].pop(0) if data["Sales"] else ""  # Get the value for 2022
+                if year == "2023":
+                    sales_value = data["Sales"].pop(0) if data["Sales"] else ""  # Get the value for 2023
+                elif year == "2024":
+                    sales_value = data["Sales"].pop(0) if data["Sales"] else ""  # Get the value for 2024
+                writer.writerow([stock, year,
+                                 sales_value,
+                                 data["Net Profit"].pop(0) if data["Net Profit"] else "",
+                                 data["OPM"].pop(0) if data["OPM"] else "",
+                                 data["EPS"].pop(0) if data["EPS"] else ""])
+
+####
+
 driver = webdriver.Chrome()
 def setup():
     # Start from the Voltas SEED URL
@@ -203,7 +277,7 @@ def setup():
     A_save_to_csv(all_company_stats)
     print("\nData has been saved to Basic_Pokemon_Stats.csv")
 
-    # Start from the Voltas SEED URL
+    #Start from the Voltas SEED URL
     url = "https://www.screener.in/company/VOLTAS/consolidated/"
     driver.get(url)
     time.sleep(1)
@@ -214,6 +288,16 @@ def setup():
         B_save_balance_sheet_to_csv(B_get_balance_sheet_data())
         print("\nBalance sheet data has been saved to Balance_Sheet_Data.csv")
 
-    
+   # Start from the Voltas SEED URL
+    url = "https://www.screener.in/company/VOLTAS/consolidated/"
+    driver.get(url)
+    time.sleep(1)
+
+    for company_name in companies.keys():
+        company_name = company_name.strip()  # Ensure no trailing/leading spaces
+        stats = search(driver, company_name)
+        C_save_profit_loss_to_csv(C_get_profit_loss_data())
+        print("\nProfit and loss data has been saved to Profit_Loss_Data.csv")
+
 setup()
 driver.quit()
